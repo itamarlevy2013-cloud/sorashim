@@ -173,10 +173,79 @@
     numbers.forEach(function (b) { observer.observe(b); });
   }
 
+  /* ---------- Timeline: a ball locked to the scroll ----------
+     The ball sits at the middle of the screen and moves exactly as fast
+     as you scroll, clamped to the length of the timeline, and snaps onto
+     an event's dot when it gets close. While it covers a dot, that
+     event's description is shown. */
+  function initTimelineBall() {
+    var list = doc.querySelector('.tl');
+    if (!list) return;
+
+    var items = toArray(list.children);
+    var ball = doc.createElement('span');
+    ball.className = 'tl-ball';
+    ball.setAttribute('aria-hidden', 'true');
+    list.appendChild(ball);
+    list.classList.add('live');
+
+    var BALL_SIZE = 34;
+    var OVERLAP = (BALL_SIZE + 19) / 2; // ball radius + dot radius
+    var LOCK = 60;    // px: within this distance of a dot, the ball sits exactly on it
+    var PULL = 130;   // px: within this distance, the ball is pulled toward the dot
+
+    /* "assist": far from a dot the ball follows the screen 1:1; close to a
+       dot it is pulled in and then held exactly on it. The pull is
+       continuous, so the ball never jumps. */
+    function assist(y, dots) {
+      for (var i = 0; i < dots.length; i++) {
+        var d = y - dots[i];
+        var dist = Math.abs(d);
+        if (dist <= LOCK) return dots[i];
+        if (dist < PULL) {
+          var t = (dist - LOCK) / (PULL - LOCK); // 0 at the lock edge, 1 at the pull edge
+          return dots[i] + (d > 0 ? 1 : -1) * t * PULL;
+        }
+      }
+      return y;
+    }
+
+    /* vertical centre of each event dot, in px from the top of the list */
+    function dotCentres() {
+      return items.map(function (li) {
+        var dot = getComputedStyle(li, '::before');
+        return li.offsetTop + parseFloat(dot.top) + parseFloat(dot.height) / 2;
+      });
+    }
+
+    function update() {
+      var dots = dotCentres();
+      var middleOfScreen = innerHeight / 2 - list.getBoundingClientRect().top;
+      var y = Math.min(Math.max(0, middleOfScreen), list.offsetHeight);
+      y = assist(y, dots);
+
+      ball.style.transform = 'translateY(' + (y - BALL_SIZE / 2) + 'px)';
+
+      var anyOn = false;
+      items.forEach(function (li, i) {
+        var on = Math.abs(y - dots[i]) < OVERLAP;
+        li.classList.toggle('on', on);
+        if (on) anyOn = true;
+      });
+      ball.classList.toggle('on', anyOn);
+    }
+
+    /* scroll events fire once per frame, so updating here keeps the ball in step */
+    addEventListener('scroll', update, { passive: true });
+    addEventListener('resize', update);
+    update();
+  }
+
   /* ---------- Init ---------- */
   if (hasObserver) initActiveNav();
   initProgressBar();
   initPosterPrinter();
+  initTimelineBall();
   if (hasObserver) {
     initReveal();
     initCounters();

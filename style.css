@@ -188,6 +188,7 @@ section {
 /* framed photo with offset shadow */
 .photo {
     margin: 0;
+    cursor: pointer;
 }
 
 .photo img {
@@ -424,6 +425,12 @@ figcaption {
 }
 
 /* hero portrait: polaroid frame with tape and a tag */
+
+.mphoto:hover {
+    transform: scale(1.04);
+    transform: rotate(-2.5deg);
+}
+
 .hero .photo {
     position: relative;
     max-width: 400px;
@@ -507,7 +514,7 @@ figcaption {
 
 /* turns together with the frame on hover (frame goes -2.2deg → 0, so +2.2deg) */
 .hero .photo:hover .tag {
-    transform: rotate(6.2deg);
+    transform: rotate(10deg);
 }
 
 
@@ -526,6 +533,7 @@ figcaption {
     display: flex;
     width: max-content;
     animation: mq 30s linear infinite;
+    cursor: pointer;
 }
 
 .mt span {
@@ -614,17 +622,25 @@ figcaption {
 
 /* ---------- 9. Timeline ---------- */
 .tl {
+    --year-size: clamp(2.5rem,8vw,4.4rem); /* title size; the dots line up with it */
+
+    position: relative; /* anchor for the scrolling ball */
     list-style: none;
     margin: 0;
     padding: 0;
     border-inline-start: 4px solid var(--ink);
 }
 
+/* tall gaps between events so the ball has room to travel */
 .tl li {
     position: relative;
-    padding-block: 0 2rem;
+    padding-block: 0 clamp(10rem,50vh,26rem);
     padding-inline: 2rem 0;
     font-size: 1.15rem;
+}
+
+.tl li:last-of-type {
+    padding-block-end: 2rem;
 }
 
 /* timeline dot */
@@ -632,7 +648,7 @@ figcaption {
     content: "";
     position: absolute;
     inset-inline-start: -11px;
-    top: .55rem;
+    top: calc(var(--year-size) * .55 - 9.5px); /* vertical middle of the title line */
     width: 19px;
     height: 19px;
     background: var(--red);
@@ -644,12 +660,18 @@ figcaption {
 .tl .y {
     display: block;
     font-family: var(--head);
-    font-size: clamp(1.9rem,6vw,3.2rem);
+    font-size: var(--year-size);
     line-height: 1.1;
     margin-bottom: .4rem;
     color: var(--red);
     -webkit-text-stroke: 1.5px var(--ink);
-    transition: color .6s .2s, -webkit-text-stroke-color .6s .2s;
+    transform-origin: right bottom; /* RTL: grow from the line, upward, so nothing below moves */
+    transition: color .6s .2s, -webkit-text-stroke-color .6s .2s, transform .35s cubic-bezier(.2,.8,.2,1);
+}
+
+/* the event the ball is on: bigger title */
+.tl li.on .y {
+    transform: scale(1.3);
 }
 
 .js .tl .y {
@@ -663,7 +685,46 @@ figcaption {
 
 .tl small {
     color: var(--soft);
-    font-size: .9rem;
+    font-size: .5em; /* relative, so it scales with the description */
+}
+
+/* the reader's ball: a ring that slides down the line as you scroll (see script.js) */
+.tl-ball {
+    position: absolute;
+    top: 0;
+    inset-inline-start: -19px; /* centres the 34px ring on the 4px line */
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 4px solid var(--ink);
+    background: rgba(194,39,29,.12);
+    pointer-events: none;
+    will-change: transform;
+}
+
+.tl-ball.on {
+    border-color: var(--red);
+    box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px var(--red);
+}
+
+/* descriptions are hidden until the ball reaches their dot.
+   Only opacity/transform change, so the layout never jumps. */
+.tl-text {
+    display: block;
+    font-size: clamp(1.6rem,3.6vw,2.2rem);
+    line-height: 1.55;
+}
+
+.tl.live .tl-text {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity .35s, transform .35s;
+}
+
+.tl.live li.on .tl-text {
+    opacity: 1;
+    transform: none;
 }
 
 
@@ -693,10 +754,13 @@ figcaption {
     font-size: clamp(3.5rem,14vw,6.5rem);
     line-height: 1;
     color: var(--red);
+    cursor: pointer;
 }
 
 .letters span {
-    font-size: 1.25rem;
+    display: inline-block; /* so it can rotate on hover */
+    font-size: clamp(0.8rem,3.6vw,1.4rem);
+    cursor: pointer;
 }
 
 
@@ -751,6 +815,7 @@ figcaption {
 .list li {
     padding: .95rem 0;
     border-bottom: 1px solid var(--line);
+    cursor: pointer;
 }
 
 .list li:first-child {
@@ -762,6 +827,7 @@ figcaption {
     font-weight: 400;
     font-size: 1.2rem;
     margin-inline-end: .4rem;
+    cursor: pointer;
 }
 
 /* two-column lists */
@@ -796,11 +862,14 @@ figcaption {
         color: var(--red);
     }
 
-    .letters div b {
+    .letters div b,
+    .letters div span {
         transition: transform .3s;
     }
 
-    .letters div:hover b {
+    /* hovering a box tilts both the big letter and the word under it */
+    .letters div:hover b,
+    .letters div:hover span {
         transform: rotate(-5deg) scale(1.08);
     }
 }
@@ -822,6 +891,7 @@ figcaption {
 .band {
     margin: 0;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .band img {
@@ -830,7 +900,7 @@ figcaption {
     max-height: 480px;
     object-fit: cover;
     border-top: 2px solid var(--ink);
-    border-bottom: 2px solid var(--ink);
+    /* border-bottom: 2px solid var(--ink); */
     background: var(--tan);
 }
 
@@ -1092,7 +1162,9 @@ footer .credit {
     }
 
     .hero .photo .frame,
-    .hero .photo .tag {
+    .hero .photo .tag,
+    .tl .y,
+    .tl.live .tl-text {
         transition: none;
     }
 
@@ -1124,6 +1196,7 @@ footer .credit {
     .skip,
     .marq,
     .prog,
+    .tl-ball,
     body::before,
     body::after {
         display: none;
@@ -1136,6 +1209,12 @@ footer .credit {
 
     .inv .letters b {
         color: #000;
+    }
+
+    .tl.live .tl-text,
+    .tl li.on .y {
+        opacity: 1;
+        transform: none;
     }
 
     section {
