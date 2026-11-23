@@ -105,6 +105,114 @@
     });
   }
 
+  /* ---------- Poster printer: download the poster as a PDF ----------
+     Uses html2pdf.js, which draws the element the way the browser shows it,
+     so the Hebrew / RTL text and the fonts come out right. The library is
+     only downloaded the first time someone clicks the button. */
+  var HTML2PDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  var html2pdfLoading = null;
+
+  function loadHtml2pdf() {
+    if (window.html2pdf) return Promise.resolve(window.html2pdf);
+    if (!html2pdfLoading) {
+      html2pdfLoading = new Promise(function (resolve, reject) {
+        var script = doc.createElement('script');
+        script.src = HTML2PDF_URL;
+        script.onload = function () { resolve(window.html2pdf); };
+        script.onerror = function () {
+          html2pdfLoading = null; // allow another try
+          reject(new Error('html2pdf failed to load'));
+        };
+        doc.head.appendChild(script);
+      });
+    }
+    return html2pdfLoading;
+  }
+
+  /* Runs on html2canvas's private copy of the page, just before the picture
+     is taken. Nothing here touches the real page. */
+  function fixPosterForCapture(clonedDoc) {
+    /* html2pdf puts its own copy of the poster in .html2pdf__container */
+    var root = clonedDoc.querySelector('.html2pdf__container') || clonedDoc;
+    var poster = root.querySelector('.poster');
+    var title = root.querySelector('.pw');
+    if (!poster || !title) return;
+
+    /* fill the PDF page edge to edge; dark border even in dark mode; no shadow */
+    poster.style.maxWidth = 'none';
+    poster.style.width = '100%';
+    poster.style.margin = '0';
+    poster.style.borderColor = '#141C26';
+    poster.style.boxShadow = 'none';
+
+    /* html2canvas mixes up right-to-left words (spaces vanish, punctuation jumps).
+       A tiny letter-spacing makes it place every letter where the browser put it. */
+    poster.style.letterSpacing = '0.01px';
+
+    /* hide the page's paper-grain overlay and progress bar (they'd tint the picture),
+       and the title's ::before "shadow" copy, which html2canvas can't draw */
+    var style = clonedDoc.createElement('style');
+    style.textContent =
+      'body::before,body::after,.prog{display:none !important}' +
+      '.pw::before{content:none !important}';
+    clonedDoc.head.appendChild(style);
+
+    /* ...and draw that shadow copy as a hard text-shadow instead: same offset
+       (-0.04em, 0.035em) and colour, so it looks the same */
+    var size = parseFloat(clonedDoc.defaultView.getComputedStyle(title).fontSize);
+    title.style.textShadow = (-0.04 * size) + 'px ' + (0.035 * size) + 'px 0 #141C26';
+  }
+
+  function initPosterPdf() {
+    var button = doc.getElementById('pdf');
+    var poster = doc.getElementById('pp');
+    var input = doc.getElementById('pt');
+    var title = doc.querySelector('.pw');
+    if (!button || !poster) return;
+
+    var label = button.textContent;
+
+    function setBusy(text) {
+      button.disabled = !!text;
+      button.textContent = text || label;
+    }
+
+    button.addEventListener('click', function () {
+      /* make sure the poster shows what is typed right now */
+      var text = (input.value || '').trim() || 'מל״ן';
+      title.textContent = text;
+      title.setAttribute('data-t', text);
+      poster.classList.remove('hit'); // don't capture the "press" animation mid-way
+
+      setBusy('מכין PDF…');
+
+      /* PDF page = the poster's size on screen, so it looks exactly the same */
+      var PX_TO_MM = 25.4 / 96;
+      var box = poster.getBoundingClientRect();
+      var pageSize = [box.width * PX_TO_MM, box.height * PX_TO_MM];
+
+      loadHtml2pdf().then(function (html2pdf) {
+        return html2pdf().set({
+          margin: 0,
+          filename: 'כרוז-' + text.replace(/[\\/:*?"<>|]/g, '') + '.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 3, // sharper output
+            scrollX: 0, // without these the PDF comes out blank
+            scrollY: 0, // when the page is scrolled down
+            onclone: fixPosterForCapture
+          },
+          jsPDF: { unit: 'mm', format: pageSize, orientation: 'portrait' }
+        }).from(poster).save();
+      }).then(function () {
+        setBusy(null);
+      }, function () {
+        setBusy('שגיאה, נסו שוב');
+        setTimeout(function () { setBusy(null); }, 2500);
+      });
+    });
+  }
+
   /* ---------- Scroll reveal ---------- */
   function initReveal() {
     var selector = [
@@ -245,6 +353,7 @@
   if (hasObserver) initActiveNav();
   initProgressBar();
   initPosterPrinter();
+  initPosterPdf();
   initTimelineBall();
   if (hasObserver) {
     initReveal();

@@ -1119,6 +1119,21 @@ footer .credit {
     animation: press .5s cubic-bezier(.2,.8,.2,1);
 }
 
+/* PDF export (html2pdf.js): pin its hidden capture area to the left edge.
+   Centred, it lands in a slightly different spot in html2canvas's copy of the
+   page (that copy has no scrollbar), which shifts the poster in the PDF. */
+.html2pdf__overlay {
+    direction: ltr;
+}
+
+.html2pdf__container {
+    margin: 0 !important;
+}
+
+.html2pdf__container .poster {
+    direction: rtl;
+}
+
 
 /* ---------- 14. Scroll progress & reveal ---------- */
 .prog {
