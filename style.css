@@ -519,42 +519,63 @@ figcaption {
 
 /* ---------- 6. Marquee ---------- */
 .marq {
+    position: relative;
     overflow: hidden;
     background: var(--band);
     color: var(--band-text);
     border-block: 2px solid var(--ink);
     font-family: var(--head);
-    font-size: clamp(1.2rem,3vw,1.9rem);
-    padding: .7rem 0;
+    font-size: clamp(1.3rem,3.4vw,2.1rem);
+    padding: .85rem 0;
+    /* soft fade on both edges */
+    -webkit-mask-image: linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    mask-image: linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
 }
 
+/* two identical groups; moving by exactly one group (50%) makes the loop seamless */
 .mt {
     display: flex;
     width: max-content;
-    animation: mq 30s linear infinite;
+    animation: mq 38s linear infinite;
+    will-change: transform;
     cursor: pointer;
 }
 
-.mt span {
-    white-space: nowrap;
-    padding-inline: 1.4rem;
-    display: flex;
-    align-items: center;
-    gap: 2.8rem;
+.marq:hover .mt {
+    animation-play-state: paused;
 }
 
-.mt span::after {
-    content: '';
+.mg {
+    display: flex;
+    align-items: center;
+    flex: none;
+}
+
+.mg .it {
+    white-space: nowrap;
+    padding-inline: 1.6rem;
+}
+
+.mg .st {
+    display: block;
+    flex: none;
     width: 12px;
     height: 12px;
     background: var(--band-accent);
+    transform: rotate(45deg);
 }
 
+/* moves left-to-right, so Hebrew items arrive in reading order */
 @keyframes mq {
+    from {
+        transform: translate3d(-50%,0,0);
+    }
+
     to {
-        transform: translateX(50%);
+        transform: translate3d(0,0,0);
     }
 }
+
 
 
 /* ---------- 7. Dark "ink" bands (.inv) ---------- */
@@ -1168,7 +1189,7 @@ footer .credit {
     }
 
     .mt {
-        animation: none;
+        animation-duration: 70s;
     }
 
     .js .rv {
@@ -1223,4 +1244,14 @@ footer .credit {
     .photo img {
         box-shadow: none;
     }
+}
+
+/* keep zoom/scale effects (timeline years, band photo) from widening the page on phones */
+html,
+body {
+    overflow-x: clip;
+}
+
+.band {
+    overflow: hidden;
 }
