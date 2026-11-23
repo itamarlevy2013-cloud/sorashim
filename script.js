@@ -138,6 +138,9 @@
     var title = root.querySelector('.pw');
     if (!poster || !title) return;
 
+    /* don't capture the "press" animation mid-way (it plays on the real page) */
+    poster.classList.remove('hit');
+
     /* fill the PDF page edge to edge; dark border even in dark mode; no shadow */
     poster.style.maxWidth = 'none';
     poster.style.width = '100%';
@@ -163,8 +166,10 @@
     title.style.textShadow = (-0.04 * size) + 'px ' + (0.035 * size) + 'px 0 #141C26';
   }
 
+  /* the "הדפס" button prints the poster on the page (initPosterPrinter)
+     and also downloads it as a PDF (here) */
   function initPosterPdf() {
-    var button = doc.getElementById('pdf');
+    var button = doc.getElementById('pb');
     var poster = doc.getElementById('pp');
     var input = doc.getElementById('pt');
     var title = doc.querySelector('.pw');
@@ -182,7 +187,6 @@
       var text = (input.value || '').trim() || 'מל״ן';
       title.textContent = text;
       title.setAttribute('data-t', text);
-      poster.classList.remove('hit'); // don't capture the "press" animation mid-way
 
       setBusy('מכין PDF…');
 
