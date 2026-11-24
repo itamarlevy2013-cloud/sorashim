@@ -111,6 +111,7 @@
      only downloaded the first time someone clicks the button. */
   var HTML2PDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
   var html2pdfLoading = null;
+  var PDF_TITLE_SCALE = 1.35; // the title in the PDF is 35% bigger than on screen
 
   function loadHtml2pdf() {
     if (window.html2pdf) return Promise.resolve(window.html2pdf);
@@ -153,16 +154,35 @@
     poster.style.letterSpacing = '0.01px';
 
     /* hide the page's paper-grain overlay and progress bar (they'd tint the picture),
-       and the title's ::before "shadow" copy, which html2canvas can't draw */
+       and the title's ::before "shadow" copy, which html2canvas can't draw.
+       Also turn off the poster's colour fades: in this copy of the page they
+       start over, so html2canvas would catch the colours at the start of the
+       fade (almost white paper, black ink) instead of the colours on screen. */
     var style = clonedDoc.createElement('style');
     style.textContent =
       'body::before,body::after,.prog{display:none !important}' +
-      '.pw::before{content:none !important}';
+      '.pw::before{content:none !important}' +
+      '.poster,.poster *{transition:none !important;animation:none !important}';
     clonedDoc.head.appendChild(style);
+
+    /* the typed title is bigger in the PDF than on screen... */
+    var view = clonedDoc.defaultView;
+    var size = parseFloat(view.getComputedStyle(title).fontSize) * PDF_TITLE_SCALE;
+    title.style.fontSize = size + 'px';
+
+    /* ...but a long title must still fit on the poster: shrink it until it does
+       (too much text makes the 3:4 poster grow taller, or spill out of it) */
+    function tooBig() {
+      return poster.offsetHeight > poster.offsetWidth * 4 / 3 + 1 ||
+        poster.scrollHeight > poster.clientHeight + 1;
+    }
+    while (size > 20 && tooBig()) {
+      size *= 0.94;
+      title.style.fontSize = size + 'px';
+    }
 
     /* ...and draw that shadow copy as a hard text-shadow instead: same offset
        (-0.04em, 0.035em) and colour, so it looks the same */
-    var size = parseFloat(clonedDoc.defaultView.getComputedStyle(title).fontSize);
     title.style.textShadow = (-0.04 * size) + 'px ' + (0.035 * size) + 'px 0 #141C26';
   }
 
@@ -199,7 +219,7 @@
         return html2pdf().set({
           margin: 0,
           filename: 'כרוז-' + text.replace(/[\\/:*?"<>|]/g, '') + '.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
+          image: { type: 'png' }, // PNG keeps the colours exact (JPEG shifts them slightly)
           html2canvas: {
             scale: 3, // sharper output
             scrollX: 0, // without these the PDF comes out blank
@@ -207,7 +227,13 @@
             onclone: fixPosterForCapture
           },
           jsPDF: { unit: 'mm', format: pageSize, orientation: 'portrait' }
-        }).from(poster).save();
+        }).from(poster).toPdf().get('pdf').then(function (pdf) {
+          /* With display scaling (125%, 175%...) the poster's size on screen is
+             not a whole number of pixels, so the picture can come out a hair
+             taller than the page and html2pdf puts that sliver on a 2nd page.
+             The poster is always one page, so drop anything after page 1. */
+          while (pdf.getNumberOfPages() > 1) pdf.deletePage(pdf.getNumberOfPages());
+        }).save();
       }).then(function () {
         setBusy(null);
       }, function () {
