@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* "Frosted folder" palette: a dark table, teal plastic, pale paper */
+:root {
+  --background: #090a08;
+  --foreground: #dff3f6;
+  --muted: #8fb0b6;
+  --tint: #62c8d4;
+  --paper: #f3f7f9;
+  --ink: #10242b;
+  --glass: rgba(8, 42, 53, 0.42);
+  --glass-line: rgba(98, 200, 212, 0.28);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-tint: var(--tint);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-glass: var(--glass);
+  --color-glass-line: var(--glass-line);
+  --font-head: var(--font-suez), "Arial Black", Arial, sans-serif;
+  --font-body: var(--font-frank), "David", Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* frosted plastic panel, the same material as the folder cover */
+.glass {
+  position: relative;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tint) 14%, transparent), transparent 38%),
+    var(--glass);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow:
+    inset 0 0 0 1px var(--glass-line),
+    inset 0 0 40px color-mix(in srgb, var(--tint) 8%, transparent),
+    0 30px 60px -30px rgba(0, 0, 0, 0.8);
+}
+
+/* a sheet of paper lying on the table */
+.sheet {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(10, 40, 50, 0.16), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
+}
+
+.kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: color-mix(in srgb, var(--tint) 80%, #fff);
+}
+
+.glow-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tint);
+  box-shadow: 0 0 10px var(--tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
